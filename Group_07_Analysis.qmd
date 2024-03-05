@@ -11,7 +11,7 @@ format:
 editor_options: 
   chunk_output_type: console
 execute:
-  echo: false
+  echo: true
   eval: true
   warning: false
   message: false
@@ -26,11 +26,12 @@ library(patchwork)
 library(gridExtra)
 library(moderndive)
 library(GGally)
+library(corrplot)
 ```
 
 ```{r}
 #| label: data
-data <- read.csv("/Users/ziluwang/Documents/GitHub/DAS-Project2-Group7/dataset07.csv")
+data <- read.csv("/Users/ziluwang/Documents/GitHub/DAS-Project2-Group7/dataset07.csv", na.strings = 'NA')
 ```
 
 # Introduction {#sec-intro}
@@ -38,6 +39,59 @@ data <- read.csv("/Users/ziluwang/Documents/GitHub/DAS-Project2-Group7/dataset07
 Introduction paragraph
 
 # Exploratory Data Analysis {#sec-EDA}
+
+```{r}
+# Check for missing values
+colSums(is.na(data))
+```
+
+```{r}
+# Data wrangling
+data$length[is.na(data$length)] <- median(data$length, na.rm = TRUE)
+# Creating a new binary variable
+data$above_7 <- ifelse(data$rating > 7, 1, 0)
+```
+
+```{r}
+glimpse(data)
+```
+
+```{r}
+# Summary statistics for each variable
+summary_stats <- summary(data)
+print(summary_stats)
+```
+
+```{r}
+# Check the distribution of numeric variables
+hist(data$year, main = "Distribution of Years", xlab = "Year")
+hist(data$length, main = "Distribution of Film Lengths", xlab = "Length (minutes)")
+hist(data$budget, main = "Distribution of Budgets", xlab = "Budget (millions $)")
+hist(data$votes, main = "Distribution of Votes", xlab = "Votes")
+hist(data$rating, main = "Distribution of Ratings", xlab = "Rating")
+```
+
+```{r}
+boxplot(data$year ~ data$above_7, main = "Year vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Year")
+boxplot(data$length ~ data$above_7, main = "Length vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Length")
+boxplot(data$budget ~ data$above_7, main = "Budget vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Budget")
+boxplot(data$votes ~ data$above_7, main = "Votes vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Votes")
+boxplot(data$rating ~ data$above_7, main = "Rating vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Rating")
+```
+
+```{r}
+# Bar plot for genre
+genre_counts <- table(data$genre)
+barplot(genre_counts, main = "Film Counts by Genre", xlab = "Genre", ylab = "Count", las = 2)
+```
+
+```{r}
+# Pairwise correlation between numeric variables
+numeric_data <- dplyr::select(data, -film_id, -genre, -above_7)  # Remove non-numeric and unnecessary columns for correlation
+cor_matrix <- cor(numeric_data, use = "complete.obs")  # Compute correlation matrix
+corrplot(cor_matrix, method = "circle", type = "upper", order = "hclust", 
+         tl.cex = 0.6, tl.col = "black", addCoef.col = "blue") 
+```
 
 
 # Formal Data Analysis {#sec-FDA}

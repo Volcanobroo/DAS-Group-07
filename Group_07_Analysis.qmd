@@ -1,0 +1,48 @@
+---
+title: "DAS Group Project 2"
+author: "Group 7"
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+  pdf: 
+    fig-pos: "H"
+editor_options: 
+  chunk_output_type: console
+execute:
+  echo: false
+  eval: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: libraries
+library(ggplot2)
+library(tidyverse)
+library(gt)
+library(patchwork)
+library(gridExtra)
+library(moderndive)
+library(GGally)
+```
+
+```{r}
+#| label: data
+data <- read.csv("/Users/ziluwang/Documents/GitHub/DAS-Project2-Group7/dataset07.csv")
+```
+
+# Introduction {#sec-intro}
+
+Introduction paragraph
+
+# Exploratory Data Analysis {#sec-EDA}
+
+
+# Formal Data Analysis {#sec-FDA}
+
+
+# Conclusions {#sec-conc}
+
+# Reference {#sec-ref}

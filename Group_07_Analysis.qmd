@@ -27,6 +27,7 @@ library(gridExtra)
 library(moderndive)
 library(GGally)
 library(corrplot)
+library(pROC)
 ```
 
 ```{r}
@@ -63,20 +64,36 @@ print(summary_stats)
 ```
 
 ```{r}
-# Check the distribution of numeric variables
-hist(data$year, main = "Distribution of Years", xlab = "Year")
-hist(data$length, main = "Distribution of Film Lengths", xlab = "Length (minutes)")
-hist(data$budget, main = "Distribution of Budgets", xlab = "Budget (millions $)")
-hist(data$votes, main = "Distribution of Votes", xlab = "Votes")
-hist(data$rating, main = "Distribution of Ratings", xlab = "Rating")
+# List of numeric variables
+numeric_vars <- c("year", "length", "budget", "votes", "rating")
+
+# Titles and x-axis labels for the histograms
+titles <- c("Distribution of Years", "Distribution of Film Lengths",
+            "Distribution of Budgets", "Distribution of Votes", "Distribution of Ratings")
+x_labels <- c("Year", "Length (minutes)", "Budget (millions $)", "Votes", "Rating")
+
+# Loop through numeric variables to create histograms
+par(mfrow = c(3, 2)) # Adjust grid layout based on number of variables
+for (i in 1:length(numeric_vars)) {
+  hist(data[[numeric_vars[i]]], main = titles[i], xlab = x_labels[i], border = 'white')
+}
+par(mfrow = c(1, 1)) # Reset to default layout
+
 ```
 
 ```{r}
-boxplot(data$year ~ data$above_7, main = "Year vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Year")
-boxplot(data$length ~ data$above_7, main = "Length vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Length")
-boxplot(data$budget ~ data$above_7, main = "Budget vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Budget")
-boxplot(data$votes ~ data$above_7, main = "Votes vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Votes")
-boxplot(data$rating ~ data$above_7, main = "Rating vs. Above 7 Rating", xlab = "Above 7 Rating", ylab = "Rating")
+numeric_vars <- c("year", "length", "budget", "votes", "rating")
+# Set up plotting area
+par(mfrow = c(3, 2))  # Adjust dimensions as necessary based on the number of variables
+
+# Loop through numeric variables to create boxplots
+for (var in numeric_vars) {
+    # Create boxplot for each numeric variable
+    boxplot(data[[var]], main = paste("Distribution of", var), ylab = var)
+}
+
+# Reset plotting area to default
+par(mfrow = c(1, 1))
 ```
 
 ```{r}
@@ -89,13 +106,115 @@ barplot(genre_counts, main = "Film Counts by Genre", xlab = "Genre", ylab = "Cou
 # Pairwise correlation between numeric variables
 numeric_data <- dplyr::select(data, -film_id, -genre, -above_7)  # Remove non-numeric and unnecessary columns for correlation
 cor_matrix <- cor(numeric_data, use = "complete.obs")  # Compute correlation matrix
-corrplot(cor_matrix, method = "circle", type = "upper", order = "hclust", 
+corrplot(cor_matrix, type = "upper", order = "hclust", 
          tl.cex = 0.6, tl.col = "black", addCoef.col = "blue") 
 ```
 
+```{r}
+# Set up the layout for multiple plots
+par(mfrow = c(3, 2))  # Adjust as necessary based on the number of variables
+
+# Loop through numeric variables to create boxplots
+for (var in numeric_vars) {
+    formula = as.formula(paste(var, "~ above_7"))  # Construct formula for plotting
+    boxplot(formula, data = data,
+            main = paste(var, "vs. Above_7"),
+            xlab = "Above 7", ylab = var)
+}
+
+# Reset the layout
+par(mfrow = c(1, 1))
+```
+
+```{r}
+# Recalculate proportions if necessary
+genre_counts <- table(data$above_7, data$genre)
+genre_proportions <- prop.table(genre_counts, 2)  # Calculate row-wise proportions
+
+# Create the barplot
+barplot(genre_proportions, legend = TRUE,
+        main = "Proportion of Ratings Above 7 by Genre",
+        xlab = "Genre", ylab = "Proportion",
+        names.arg = colnames(genre_counts))  # Use column names of the original counts table
+```
 
 # Formal Data Analysis {#sec-FDA}
+```{r}
+data_clean <- dplyr::select(data, -film_id, -rating)
+data_clean$length_log <- log1p(data_clean$length)
+data_clean$votes_log <- log1p(data_clean$votes)
+```
 
+```{r}
+# split train and test dataset 
+set.seed(123)  # for reproducibility
+index <- createDataPartition(data_clean$above_7, p = .70, list = FALSE)
+train_data <- data_clean[index, ]
+test_data <- data_clean[-index, ]
+```
+
+```{r}
+glm_model <- glm(above_7 ~ year + length_log + budget + votes_log + genre, 
+                 family = binomial, data = train_data)
+summary(glm_model)
+# Predict on the test data
+predictions <- predict(glm_model, test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.5, 1, 0)
+conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
+accuracy <- conf_matrix$overall['Accuracy']
+sensitivity <- conf_matrix$byClass['Sensitivity']
+specificity <- conf_matrix$byClass['Specificity']
+
+# Print the metrics
+print(accuracy)
+print(sensitivity)
+print(specificity)
+roc_response <- roc(response = test_data$above_7, predictor = predictions)
+plot(roc_response)
+auc(roc_response)
+```
+
+```{r}
+glm_model <- glm(above_7 ~ length_log + budget + votes_log + genre, 
+                 family = binomial, data = train_data)
+summary(glm_model)
+# Predict on the test data
+predictions <- predict(glm_model, test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.5, 1, 0)
+conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
+accuracy <- conf_matrix$overall['Accuracy']
+sensitivity <- conf_matrix$byClass['Sensitivity']
+specificity <- conf_matrix$byClass['Specificity']
+
+# Print the metrics
+print(accuracy)
+print(sensitivity)
+print(specificity)
+roc_response <- roc(response = test_data$above_7, predictor = predictions)
+plot(roc_response)
+auc(roc_response)
+```
+
+```{r}
+glm_model <- glm(above_7 ~ length_log + budget + votes_log + genre, 
+                 family = binomial, data = train_data)
+summary(glm_model)
+# Predict on the test data
+predictions <- predict(glm_model, test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.32, 1, 0)
+conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
+accuracy <- conf_matrix$overall['Accuracy']
+sensitivity <- conf_matrix$byClass['Sensitivity']
+specificity <- conf_matrix$byClass['Specificity']
+
+# Print the metrics
+print(accuracy)
+print(sensitivity)
+print(specificity)
+roc_response <- roc(response = test_data$above_7, predictor = predictions)
+plot(roc_response)
+auc(roc_response)
+```
 
 # Conclusions {#sec-conc}
 

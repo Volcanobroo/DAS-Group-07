@@ -11,7 +11,7 @@ format:
 editor_options: 
   chunk_output_type: console
 execute:
-  echo: true
+  echo: false
   eval: true
   warning: false
   message: false
@@ -27,6 +27,7 @@ library(gridExtra)
 library(moderndive)
 library(GGally)
 library(corrplot)
+library(caret)
 library(pROC)
 ```
 
@@ -154,12 +155,36 @@ test_data <- data_clean[-index, ]
 ```
 
 ```{r}
+#Test the full model without processing
+glm_model <- glm(above_7 ~ year + length + budget + votes + genre, 
+                 family = binomial, data = train_data)
+summary(glm_model)
+# Predict on the test data
+predictions <- predict(glm_model, test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.32, 1, 0)
+conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
+accuracy <- conf_matrix$overall['Accuracy']
+sensitivity <- conf_matrix$byClass['Sensitivity']
+specificity <- conf_matrix$byClass['Specificity']
+
+# Print the metrics
+print(accuracy)
+print(sensitivity)
+print(specificity)
+roc_response <- roc(response = test_data$above_7, predictor = predictions)
+plot(roc_response)
+auc(roc_response)
+```
+
+
+```{r}
+#Full model with log transformation
 glm_model <- glm(above_7 ~ year + length_log + budget + votes_log + genre, 
                  family = binomial, data = train_data)
 summary(glm_model)
 # Predict on the test data
 predictions <- predict(glm_model, test_data, type = "response")
-predicted_class <- ifelse(predictions > 0.5, 1, 0)
+predicted_class <- ifelse(predictions > 0.32, 1, 0)
 conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
 accuracy <- conf_matrix$overall['Accuracy']
 sensitivity <- conf_matrix$byClass['Sensitivity']
@@ -174,28 +199,9 @@ plot(roc_response)
 auc(roc_response)
 ```
 
-```{r}
-glm_model <- glm(above_7 ~ length_log + budget + votes_log + genre, 
-                 family = binomial, data = train_data)
-summary(glm_model)
-# Predict on the test data
-predictions <- predict(glm_model, test_data, type = "response")
-predicted_class <- ifelse(predictions > 0.5, 1, 0)
-conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
-accuracy <- conf_matrix$overall['Accuracy']
-sensitivity <- conf_matrix$byClass['Sensitivity']
-specificity <- conf_matrix$byClass['Specificity']
-
-# Print the metrics
-print(accuracy)
-print(sensitivity)
-print(specificity)
-roc_response <- roc(response = test_data$above_7, predictor = predictions)
-plot(roc_response)
-auc(roc_response)
-```
 
 ```{r}
+# Remove year
 glm_model <- glm(above_7 ~ length_log + budget + votes_log + genre, 
                  family = binomial, data = train_data)
 summary(glm_model)
@@ -216,6 +222,30 @@ plot(roc_response)
 auc(roc_response)
 ```
 
+```{r}
+# Remove year and votes_log
+glm_model <- glm(above_7 ~ length_log + budget + genre, 
+                 family = binomial, data = train_data)
+summary(glm_model)
+# Predict on the test data
+predictions <- predict(glm_model, test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.32, 1, 0)
+conf_matrix <- confusionMatrix(factor(predicted_class), factor(test_data$above_7))
+accuracy <- conf_matrix$overall['Accuracy']
+sensitivity <- conf_matrix$byClass['Sensitivity']
+specificity <- conf_matrix$byClass['Specificity']
+
+# Print the metrics
+print(accuracy)
+print(sensitivity)
+print(specificity)
+roc_response <- roc(response = test_data$above_7, predictor = predictions)
+plot(roc_response)
+auc(roc_response)
+```
+
 # Conclusions {#sec-conc}
+
+
 
 # Reference {#sec-ref}

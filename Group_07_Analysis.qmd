@@ -64,7 +64,7 @@ summary_stats <- summary(data)
 print(summary_stats)
 ```
 
-```{r}
+```{r fig.width=6, fig.height=8}
 # List of numeric variables
 numeric_vars <- c("year", "length", "budget", "votes", "rating")
 
@@ -82,7 +82,7 @@ par(mfrow = c(1, 1)) # Reset to default layout
 
 ```
 
-```{r}
+```{r fig.width=6, fig.height=8}
 numeric_vars <- c("year", "length", "budget", "votes", "rating")
 # Set up plotting area
 par(mfrow = c(3, 2))  # Adjust dimensions as necessary based on the number of variables
@@ -111,7 +111,7 @@ corrplot(cor_matrix, type = "upper", order = "hclust",
          tl.cex = 0.6, tl.col = "black", addCoef.col = "blue") 
 ```
 
-```{r}
+```{r fig.width=6, fig.height=8}
 # Set up the layout for multiple plots
 par(mfrow = c(3, 2))  # Adjust as necessary based on the number of variables
 
